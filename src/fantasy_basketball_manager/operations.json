@@ -1,0 +1,1471 @@
+{
+  "name": "fantasy-basketball-manager",
+  "baseUrl": "https://fantasy.espn.com",
+  "loginCookies": [
+    "espn_s2",
+    "SWID"
+  ],
+  "operations": [
+    {
+      "name": "matchups",
+      "description": "Current league matchups and roster details",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?view=modular&view=mNav&view=mMatchupScore&view=mScoreboard&view=mStatus&view=mSettings&view=mTeam&view=mPendingTransactions",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "schedule"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "league",
+      "description": "League teams and standings records",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?view=modular&view=mNav&view=mMatchupScore&view=mScoreboard&view=mStatus&view=mSettings&view=mTeam&view=mPendingTransactions",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "teams"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "availablePlayers",
+      "description": "Available players and ESPN player statistics as shown on the league player page",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?scoringPeriodId=0&view=kona_player_info",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "x-fantasy-filter": "{\"players\":{\"filterRanksForScoringPeriodIds\":{\"value\":[0]},\"filterStatus\":{\"value\":[\"FREEAGENT\",\"WAIVERS\"]},\"limit\":1000,\"offset\":0,\"sortPercOwned\":{\"sortPriority\":1,\"sortAsc\":false},\"filterStatsForTopScoringPeriodIds\":{\"value\":5,\"additionalValue\":[\"002027\",\"102027\",\"002026\",\"012027\",\"022027\",\"032027\",\"042027\"]}}}"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "query:scoringPeriodId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterRanksForScoringPeriodIds/value/0"
+          ]
+        },
+        {
+          "param": "offset",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/offset"
+          ]
+        },
+        {
+          "param": "statId0",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/0"
+          ]
+        },
+        {
+          "param": "statId1",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/1"
+          ]
+        },
+        {
+          "param": "statId2",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/2"
+          ]
+        },
+        {
+          "param": "statId3",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/3"
+          ]
+        },
+        {
+          "param": "statId4",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/4"
+          ]
+        },
+        {
+          "param": "statId5",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/5"
+          ]
+        },
+        {
+          "param": "statId6",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterStatsForTopScoringPeriodIds/additionalValue/6"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "players"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "offset",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId0",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId1",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId2",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId3",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId4",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId5",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "statId6",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "lineup",
+      "description": "Configured team lineup for a scoring period",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?forTeamId=0&scoringPeriodId=0&view=mRoster",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "x-fantasy-filter": "{\"players\":{\"filterRanksForScoringPeriodIds\":{\"value\":[0]}}}"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "query:forTeamId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "query:scoringPeriodId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/players/filterRanksForScoringPeriodIds/value/0"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "teams"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "swapFutureLineup",
+      "description": "Swap two eligible regular roster slots on a future scoring day",
+      "request": {
+        "method": "POST",
+        "url": "https://lm-api-writes.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0/transactions/",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "content-type": "application/json"
+        },
+        "body": "{\"isLeagueManager\":false,\"teamId\":0,\"type\":\"FUTURE_ROSTER\",\"memberId\":\"\",\"scoringPeriodId\":0,\"executionType\":\"EXECUTE\",\"items\":[{\"playerId\":0,\"type\":\"LINEUP\",\"fromLineupSlotId\":0,\"toLineupSlotId\":0},{\"playerId\":0,\"type\":\"LINEUP\",\"fromLineupSlotId\":0,\"toLineupSlotId\":0}]}"
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/teamId"
+          ]
+        },
+        {
+          "ref": "cookie:SWID",
+          "at": [
+            "body",
+            "json:/memberId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "body",
+            "json:/scoringPeriodId"
+          ]
+        },
+        {
+          "param": "playerA",
+          "at": [
+            "body",
+            "json:/items/0/playerId"
+          ]
+        },
+        {
+          "param": "slotA",
+          "at": [
+            "body",
+            "json:/items/0/fromLineupSlotId"
+          ]
+        },
+        {
+          "param": "slotB",
+          "at": [
+            "body",
+            "json:/items/0/toLineupSlotId"
+          ]
+        },
+        {
+          "param": "playerB",
+          "at": [
+            "body",
+            "json:/items/1/playerId"
+          ]
+        },
+        {
+          "param": "slotB",
+          "at": [
+            "body",
+            "json:/items/1/fromLineupSlotId"
+          ]
+        },
+        {
+          "param": "slotA",
+          "at": [
+            "body",
+            "json:/items/1/toLineupSlotId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "POST",
+        "host": "lm-api-writes.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*/transactions/*"
+      },
+      "response": {
+        "format": "json"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "playerA",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "slotA",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "slotB",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "playerB",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": false,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "addFreeAgent",
+      "description": "Add one free agent; subject to ESPN roster rules",
+      "request": {
+        "method": "POST",
+        "url": "https://lm-api-writes.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0/transactions/",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "content-type": "application/json"
+        },
+        "body": "{\"isLeagueManager\":false,\"teamId\":0,\"type\":\"FREEAGENT\",\"scoringPeriodId\":0,\"executionType\":\"EXECUTE\",\"items\":[{\"playerId\":0,\"type\":\"ADD\",\"toTeamId\":0}]}"
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/teamId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "body",
+            "json:/scoringPeriodId"
+          ]
+        },
+        {
+          "param": "playerId",
+          "at": [
+            "body",
+            "json:/items/0/playerId"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/items/0/toTeamId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "POST",
+        "host": "lm-api-writes.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*/transactions/*"
+      },
+      "response": {
+        "format": "json"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "playerId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": false,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "seasonMatchups",
+      "description": "Full season matchup schedule and scores",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?rosterForTeamId=0&view=mDraftDetail&view=mLiveScoring&view=mMatchupScore&view=mPendingTransactions&view=mPositionalRatings&view=mRoster&view=mSettings&view=mTeam&view=modular&view=mNav",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "query:rosterForTeamId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "schedule"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "draft",
+      "description": "Season draft picks and teams",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?rosterForTeamId=0&view=mDraftDetail&view=mLiveScoring&view=mMatchupScore&view=mPendingTransactions&view=mPositionalRatings&view=mRoster&view=mSettings&view=mTeam&view=modular&view=mNav",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "query:rosterForTeamId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "draftDetail.picks"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "leagueActivity",
+      "description": "League activity and player transactions",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-communication.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0/communication/?view=kona_league_communication",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "x-fantasy-filter": "{\"topics\":{\"filterDateRange\":{\"value\":0,\"additionalValue\":0},\"filterExcludeMessageTypeIds\":{\"value\":[106,202,232,184,183,229,228,227,230,231,286,188]},\"filterIncludeMessageTypeIds\":null,\"filterMessageToAndFromIds\":null,\"filterType\":{\"value\":[\"ACTIVITY_SETTINGS\",\"ACTIVITY_TRANSACTIONS\",\"MSG_BOARD\",\"NOTE\",\"POLL\",\"ACTIVITY_STATUS\",\"ACTIVITY_SCHEDULE\"]},\"limit\":200,\"limitPerMessageSet\":{\"value\":25},\"offset\":0,\"sortFor\":{\"sortPriority\":2,\"sortAsc\":false},\"sortMessageDate\":{\"sortPriority\":1,\"sortAsc\":false}}}"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "startMs",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/topics/filterDateRange/value"
+          ]
+        },
+        {
+          "param": "endMs",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/topics/filterDateRange/additionalValue"
+          ]
+        },
+        {
+          "param": "offset",
+          "at": [
+            "header:x-fantasy-filter",
+            "json:/topics/offset"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-communication.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*/communication/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "topics"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "startMs",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "endMs",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "offset",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "addDropFreeAgent",
+      "description": "Add a free agent and drop a rostered player in one combined transaction",
+      "request": {
+        "method": "POST",
+        "url": "https://lm-api-writes.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0/transactions/",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "content-type": "application/json"
+        },
+        "body": "{\"isLeagueManager\":false,\"teamId\":0,\"type\":\"FREEAGENT\",\"scoringPeriodId\":0,\"executionType\":\"EXECUTE\",\"items\":[{\"playerId\":0,\"type\":\"ADD\",\"toTeamId\":0},{\"playerId\":0,\"type\":\"DROP\",\"fromTeamId\":0}]}"
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/teamId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "body",
+            "json:/scoringPeriodId"
+          ]
+        },
+        {
+          "param": "playerId",
+          "at": [
+            "body",
+            "json:/items/0/playerId"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/items/0/toTeamId"
+          ]
+        },
+        {
+          "param": "dropPlayerId",
+          "at": [
+            "body",
+            "json:/items/1/playerId"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/items/1/fromTeamId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "POST",
+        "host": "lm-api-writes.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*/transactions/*"
+      },
+      "response": {
+        "format": "json"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "playerId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "dropPlayerId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": false,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "swapCurrentLineup",
+      "description": "Swap two eligible regular roster slots in the current scoring period",
+      "request": {
+        "method": "POST",
+        "url": "https://lm-api-writes.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0/transactions/",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "content-type": "application/json"
+        },
+        "body": "{\"isLeagueManager\":false,\"teamId\":0,\"type\":\"ROSTER\",\"memberId\":\"\",\"scoringPeriodId\":0,\"executionType\":\"EXECUTE\",\"items\":[{\"playerId\":0,\"type\":\"LINEUP\",\"fromLineupSlotId\":0,\"toLineupSlotId\":0},{\"playerId\":0,\"type\":\"LINEUP\",\"fromLineupSlotId\":0,\"toLineupSlotId\":0}]}"
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "body",
+            "json:/teamId"
+          ]
+        },
+        {
+          "ref": "cookie:SWID",
+          "at": [
+            "body",
+            "json:/memberId"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "body",
+            "json:/scoringPeriodId"
+          ]
+        },
+        {
+          "param": "playerA",
+          "at": [
+            "body",
+            "json:/items/0/playerId"
+          ]
+        },
+        {
+          "param": "slotA",
+          "at": [
+            "body",
+            "json:/items/0/fromLineupSlotId"
+          ]
+        },
+        {
+          "param": "slotB",
+          "at": [
+            "body",
+            "json:/items/0/toLineupSlotId"
+          ]
+        },
+        {
+          "param": "playerB",
+          "at": [
+            "body",
+            "json:/items/1/playerId"
+          ]
+        },
+        {
+          "param": "slotB",
+          "at": [
+            "body",
+            "json:/items/1/fromLineupSlotId"
+          ]
+        },
+        {
+          "param": "slotA",
+          "at": [
+            "body",
+            "json:/items/1/toLineupSlotId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "POST",
+        "host": "lm-api-writes.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*/transactions/*"
+      },
+      "response": {
+        "format": "json"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "playerA",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "slotA",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "slotB",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "playerB",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": false,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "leagueSnapshot",
+      "description": "Full league season snapshot including rosters, player statistics, scoring rules and matchups",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0?view=mDraftDetail&view=mLiveScoring&view=mMatchupScore&view=mPendingTransactions&view=mPositionalRatings&view=mRoster&view=mSettings&view=mTeam&view=modular&view=mNav",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*"
+      },
+      "response": {
+        "format": "json"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "nbaSchedule",
+      "description": "ESPN NBA professional team game schedules",
+      "request": {
+        "method": "GET",
+        "url": "https://lm-api-reads.fantasy.espn.com/apis/v3/games/fba/seasons/2027?view=proTeamSchedules_wl",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "lm-api-reads.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*"
+      },
+      "response": {
+        "format": "json",
+        "extract": "settings.proTeams"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "quickLineupRestOfMatchup",
+      "description": "ESPN Quick Lineup: optimize the rest of the matchup, then verify every remaining day",
+      "request": {
+        "method": "POST",
+        "url": "https://lm-api-writes.fantasy.espn.com/apis/v3/games/fba/seasons/2027/segments/0/leagues/0/teams/0/recommendations?lineupScoringPeriodId=0&recommendationTypeId=LINEUP&restOfWeek=true",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona",
+          "content-type": "application/json"
+        },
+        "body": "{}"
+      },
+      "slots": [
+        {
+          "param": "season",
+          "at": [
+            "path:5"
+          ]
+        },
+        {
+          "param": "scoringPeriodId",
+          "at": [
+            "query:lineupScoringPeriodId"
+          ]
+        },
+        {
+          "param": "leagueId",
+          "at": [
+            "path:9"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "path:11"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/",
+        "steps": []
+      },
+      "match": {
+        "method": "POST",
+        "host": "lm-api-writes.fantasy.espn.com",
+        "path": "/apis/v3/games/fba/seasons/*/segments/0/leagues/*/teams/*/recommendations"
+      },
+      "response": {
+        "format": "json"
+      },
+      "params": [
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "scoringPeriodId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": false,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    },
+    {
+      "name": "seasonCalendar",
+      "description": "ESPN embedded season calendar: daily scoring periods and weekly period boundaries",
+      "request": {
+        "method": "GET",
+        "url": "https://fantasy.espn.com/basketball/team?leagueId=0&teamId=0&seasonId=2027",
+        "headers": {
+          "accept": "application/json",
+          "origin": "https://fantasy.espn.com",
+          "referer": "https://fantasy.espn.com/",
+          "x-fantasy-platform": "espn-fantasy-web",
+          "x-fantasy-source": "kona"
+        }
+      },
+      "slots": [
+        {
+          "param": "leagueId",
+          "at": [
+            "query:leagueId"
+          ]
+        },
+        {
+          "param": "season",
+          "at": [
+            "query:seasonId"
+          ]
+        },
+        {
+          "param": "teamId",
+          "at": [
+            "query:teamId"
+          ]
+        }
+      ],
+      "volatile": [],
+      "trigger": {
+        "url": "https://fantasy.espn.com/basketball/team?leagueId={leagueId}&teamId={teamId}&seasonId={season}",
+        "steps": []
+      },
+      "match": {
+        "method": "GET",
+        "host": "fantasy.espn.com",
+        "path": "/basketball/team"
+      },
+      "response": {
+        "format": "embedded",
+        "extract": "props.pageProps.page.config.constants",
+        "embedded": {
+          "regex": "__NEXT_DATA__\\s*=\\s*({)"
+        }
+      },
+      "params": [
+        {
+          "name": "leagueId",
+          "type": "string",
+          "required": true,
+          "example": "0"
+        },
+        {
+          "name": "season",
+          "type": "number",
+          "required": true,
+          "example": "2027"
+        },
+        {
+          "name": "teamId",
+          "type": "number",
+          "required": true,
+          "example": "0"
+        }
+      ],
+      "readOnly": true,
+      "minTier": 1,
+      "learnedLoggedIn": true
+    }
+  ]
+}
