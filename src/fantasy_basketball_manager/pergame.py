@@ -42,8 +42,10 @@ def fetch_players(season, period, ids=(), limit=700, timeout=60):
     The most-owned `limit` players are fetched, plus any `ids` (e.g. both rosters).
     """
     stats = {"value": 82, "additionalValue": [f"00{season}", f"10{season}"]}
-    filters = [{"players": {"limit": limit, "sortPercOwned": {"sortPriority": 1, "sortAsc": False},
-                            "filterStatsForTopScoringPeriodIds": stats}}]
+    filters = []
+    if limit:
+        filters.append({"players": {"limit": limit, "sortPercOwned": {"sortPriority": 1, "sortAsc": False},
+                                    "filterStatsForTopScoringPeriodIds": stats}})
     if ids:
         filters.append({"players": {"filterIds": {"value": sorted(set(ids))},
                                     "filterStatsForTopScoringPeriodIds": stats}})

@@ -110,6 +110,8 @@ Additional commands:
 | `fbm status` | Read current period, league status, lineup and acquisition usage/limits. |
 | `fbm project [--model pergame\|espn] [--exclude ID ...] [--minutes FILE] [--output FILE]` | Produce both teams' daily forecasts and selected starting players. The per-game model is the default. |
 | `fbm backtest --from-period N --to-period M` | Score the per-game model, ESPN's preseason forecast and the season average against completed games. |
+| `fbm transactions [--days 30] [--team ID]` | League adds and drops by team, newest first, with player names. |
+| `fbm stream [--from-period N] [--keep ID ...] [--minutes FILE] [--top 10]` | Rank free-agent add/drop pairs by lineup points added for the rest of the matchup. Read-only. |
 | `fbm compare ORIGINAL.json CURRENT.json` | Compare saved `fbm project` outputs by team ID and day, with point deltas and actual/forecast labels. |
 | `fbm-mcp [--config PATH] [--allow-writes]` | Run the optional local stdio MCP server. |
 
@@ -271,6 +273,54 @@ rather than remaining live-game production, and an OUT status today is held out 
 future dates until refreshed. Show injury scenarios and uncertainty instead of presenting
 a forecast as a guarantee.
 
+## Transaction history
+
+```bash
+fbm transactions --days 30            # every team
+fbm transactions --days 7 --team 3    # one team
+```
+
+Reads ESPN's league activity feed (the `leagueActivity` call) and returns each add,
+drop and drop-from-IR with the date (Eastern time), team and player name, plus per-team
+totals. Unknown ESPN transaction types are kept and labelled with their numeric ID
+rather than dropped. Lineup moves are not in this feed; `fbm status` shows each team's
+lineup-move and acquisition counters.
+
+## Streaming playbook
+
+`fbm stream` ranks free agents by **how many points they add to your optimized starting
+lineup for the rest of the matchup**, after losing whoever you would drop. It never sends
+anything; make a chosen move with `fbm call addDropFreeAgent ... --apply`, then rerun.
+
+```bash
+fbm stream                          # pickups counting from today
+fbm stream --from-period 26         # pickups counting from a later day
+fbm stream --keep 111 222           # never suggest dropping these players
+fbm stream --minutes data/minutes.json
+```
+
+The rules it follows, and why:
+
+1. **Count open starting slots, not player quality.** A pickup only scores when he would
+   start. A 25-point player who fills an empty slot on a light day beats a 40-point player
+   who would sit on the bench, and the ranking measures exactly that, so players with
+   games on your light days rise to the top.
+2. **Plan with the per-game model.** ESPN's preseason forecast ran about 3 points per
+   player-game high in the backtest; the per-game model removes most of that bias.
+3. **Drop the cheapest player, and break ties on season value.** Drops are chosen by
+   lineup points lost this matchup; when several cost nothing (for example, no games
+   left), the lowest season average is suggested first. Use `--keep` for anyone you
+   want to hold regardless.
+4. **Keep one acquisition in reserve** for injuries until the last two days of the
+   matchup (`recommendedToUseNow`). With none left, the output says so.
+5. **Supply day-of minutes when you have them.** Minutes are the largest remaining
+   source of single-game error (perfect minutes cut backtest error from 10.1 to 8.5).
+
+Timing when you act: add a player before his team tips off so that day's game counts;
+drop a player after his game ends so his points still count; then put the new player in
+a starting slot (ESPN adds to the bench) or run `quickLineupRestOfMatchup` and verify.
+Each recommendation is evaluated on its own; rerun after every move.
+
 ## Install the agent skill
 
 After installing the CLI, copy the skill into your agent's skills directory. For Codex:
@@ -310,7 +360,9 @@ This enables a tool, not blanket permission for the agent to change a roster.
 | `fantasy_operations` | None | List ESPN calls and arguments. |
 | `fantasy_status` | None | Live state and acquisition counters. |
 | `fantasy_read` | `operation`, optional `args` object | Run a named read operation. |
-| `fantasy_project` | Optional `exclude_player_ids` array | Day-by-day points forecast and injury scenarios. |
+| `fantasy_project` | Optional `exclude_player_ids` array | Day-by-day per-game-model forecast and injury scenarios. |
+| `fantasy_transactions` | Optional `days`, `team_id` | League adds and drops by team, newest first. |
+| `fantasy_stream` | Optional `from_period`, `keep_player_ids` | Ranked free-agent add/drop pairs by lineup points added. Read-only. |
 | `fantasy_preview` | `operation`, optional `args` object | Preflight and preview a write; send nothing. |
 | `fantasy_apply` | Same as preview | Available only with `--allow-writes`; preflight, preview, send once, read back. |
 
