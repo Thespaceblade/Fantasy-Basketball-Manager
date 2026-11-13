@@ -108,7 +108,8 @@ Additional commands:
 | `fbm install-operations` | Install/update the isolated API Anything site file; preserve its previous version locally. |
 | `fbm ops` | List calls, descriptions, write flags and extra arguments. |
 | `fbm status` | Read current period, league status, lineup and acquisition usage/limits. |
-| `fbm project [--exclude ID ...] [--minutes FILE] [--output FILE]` | Produce both teams' daily forecasts and selected starting players. |
+| `fbm project [--model pergame\|espn] [--exclude ID ...] [--minutes FILE] [--output FILE]` | Produce both teams' daily forecasts and selected starting players. The per-game model is the default. |
+| `fbm backtest --from-period N --to-period M` | Score the per-game model, ESPN's preseason forecast and the season average against completed games. |
 | `fbm compare ORIGINAL.json CURRENT.json` | Compare saved `fbm project` outputs by team ID and day, with point deltas and actual/forecast labels. |
 | `fbm-mcp [--config PATH] [--allow-writes]` | Run the optional local stdio MCP server. |
 
@@ -194,12 +195,60 @@ fbm compare data/start-of-week.json data/current.json
 fbm project --exclude 111 222
 ```
 
-The model scores **ESPN forward season stat totals** with your league's scoring rules,
-divides by projected games, and finds a maximum-weight assignment into eligible
-starting slots for each date. Completed days use actual points. IR and players marked
-OUT/SUSPENSION are excluded; DTD players are included unless explicitly excluded.
-Both teams are assumed to keep their current rosters. The model supports points
-leagues and refuses position-specific scoring overrides that it cannot score correctly.
+### Per-game model (default)
+
+Each game is projected as **minutes × fantasy points per minute**, in your league's scoring:
+
+- **Points per minute** come from the player's 2026-27 game log, weighted toward recent
+  games (each older game counts 0.8× the next), and shrunk toward ESPN's preseason
+  per-minute rate as if the preseason rate were 150 extra minutes of play.
+- **Minutes** come from the same recency-weighted game log, or from a date-specific
+  minutes file you supply (see below).
+- Each prediction only uses games before the day being projected, so it can be backtested.
+
+Game logs come from ESPN's public player endpoint (no league login is sent). Players
+with no games yet fall back to ESPN's preseason forecast.
+
+**Backtest (2026-27 season, run 2026-11-13).** Settings were tuned on Oct 29–Nov 6
+(scoring periods 10–18) and then scored on later games the model had not seen.
+Error is mean absolute error per player-game, in fantasy points; bias is the average
+over- (+) or under- (−) projection. All three methods were scored on the same games.
+
+| Games tested | Per-game model | ESPN preseason forecast | Season average to date |
+| --- | --- | --- | --- |
+| Nov 7–12 (715 games) | **10.1** error, +0.6 bias | 11.2 error, **+3.3 bias** | 10.2 error, −0.4 bias |
+| Nov 9–12 (474 games) | 10.3 error, +0.3 bias | 11.4 error, +3.3 bias | **10.1** error, −0.7 bias |
+
+What this means:
+
+- ESPN's preseason forecast **overestimates by about 3 points per player per game**, which
+  adds up to roughly 30 points per day for a full 10-player lineup. The per-game model
+  removes most of that bias. This is the main reason it is the default.
+- On single games, the per-game model is only about as accurate as a plain season average.
+  A typical single game misses by about 10 fantasy points either way; no simple model gets
+  much below that.
+- **Minutes are the biggest remaining lever.** With perfect knowledge of each player's
+  actual minutes, the same model's error drops from 10.1 to 8.5. Supplying a good
+  day-of minutes forecast (`--minutes`) is the best way to improve today's projections.
+- An opponent-strength adjustment (fantasy points allowed per minute) was tested and did
+  not improve accuracy, so it is off by default (`Params.use_opponent`).
+
+Rerun the backtest on your own league's scoring any time:
+
+```bash
+fbm backtest --from-period 19 --to-period 24
+```
+
+`--model espn` restores the previous behavior: ESPN forward season stat totals scored with
+your league's rules and divided by projected games.
+
+### Lineups, minutes and limits
+
+For each date, the selected players come from a maximum-weight assignment into eligible
+starting slots. Completed days use actual points. IR and players marked OUT/SUSPENSION
+are excluded; DTD players are included unless explicitly excluded with `--exclude`.
+Both teams are assumed to keep their current rosters. The model supports points leagues
+and refuses position-specific scoring overrides that it cannot score correctly.
 
 Optional date-specific minutes overrides use a local JSON file:
 
@@ -214,16 +263,13 @@ Optional date-specific minutes overrides use a local JSON file:
 fbm project --minutes data/minutes.json --output data/current.json
 ```
 
-These multiply ESPN's projected fantasy points per minute by the supplied minutes
-**only for games on that date**, leaving other dates on projected season minutes.
-Use a source you can access and record its timestamp yourself; this release does not
-automatically fetch RotoWire or paid forecasts. No actual-season-average fallback is
-used when a forward forecast is missing: the command stops and names the player.
+Supplied minutes apply **only to games on that date**. Use a source you can access and
+record its timestamp yourself; this release does not fetch RotoWire or paid forecasts.
 
-This is not a backtested probability model. It has no opponent-adjusted game-stat
-forecast, and today's estimate covers full games rather than remaining live-game
-production. An OUT status today is held out for all future dates until refreshed.
-Show injury scenarios and uncertainty instead of presenting a forecast as a guarantee.
+These are point estimates, not win probabilities. Today's estimate covers full games
+rather than remaining live-game production, and an OUT status today is held out for all
+future dates until refreshed. Show injury scenarios and uncertainty instead of presenting
+a forecast as a guarantee.
 
 ## Install the agent skill
 
