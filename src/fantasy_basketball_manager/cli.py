@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 from .client import Client, install_operations, operation_spec, templates
 from .forecast import project
+from .pergame import Params, evaluate, fetch_players
 from .manager import Manager, counters
 
 CONFIG = Path.home() / ".config" / "fantasy-basketball-manager" / "config.json"
@@ -40,7 +41,12 @@ def execute(argv=None):
     call.add_argument("--apply", action="store_true", help="Send an explicitly authorized write once after preflight")
     sub.add_parser("status", help="Live roster, matchup status, and acquisition counters")
     forecast = sub.add_parser("project", help="Project current matchup using forward stat forecasts")
+    forecast.add_argument("--model", choices=("pergame", "espn"), default="pergame",
+                          help="pergame (default): recent game logs + preseason prior; espn: ESPN preseason per-game forecast")
     forecast.add_argument("--minutes", type=Path, help="Optional JSON {date: YYYY-MM-DD, players: {ESPN_ID: minutes}}")
+    test = sub.add_parser("backtest", help="Score the per-game model against completed games (public data, no login)")
+    test.add_argument("--from-period", type=int, required=True, help="First daily scoring period to test")
+    test.add_argument("--to-period", type=int, required=True, help="Last daily scoring period to test")
     forecast.add_argument("--exclude", type=int, nargs="*", default=[], help="Scenario: exclude these player IDs on future days")
     forecast.add_argument("--output", type=Path)
     compare = sub.add_parser("compare", help="Compare two saved fbm project outputs by team ID and scoring period")
@@ -84,10 +90,23 @@ def execute(argv=None):
         return {"scoringPeriodId": s["scoringPeriodId"], "status": s["status"],
                 "counters": counters(s, config["teamId"], client.read("seasonCalendar")),
                 "lineup": client.read("lineup", scoringPeriodId=s["scoringPeriodId"])}
+    if args.command == "backtest":
+        if not 0 < args.from_period <= args.to_period:
+            raise ValueError("Periods must be positive and in order")
+        snapshot = client.read("leagueSnapshot")
+        pool = fetch_players(config["season"], snapshot["scoringPeriodId"])
+        return evaluate(pool, client.read("nbaSchedule"), config["season"],
+                        snapshot["settings"]["scoringSettings"]["scoringItems"],
+                        set(range(args.from_period, args.to_period + 1)), Params())
     if args.command == "project":
-        result = project(client.read("leagueSnapshot"), client.read("nbaSchedule"), client.read("seasonCalendar"), config["teamId"],
+        snapshot = client.read("leagueSnapshot")
+        pool = None
+        if args.model == "pergame":
+            ids = [e["playerId"] for t in snapshot["teams"] for e in t["roster"]["entries"]]
+            pool = fetch_players(config["season"], snapshot["scoringPeriodId"], ids)
+        result = project(snapshot, client.read("nbaSchedule"), client.read("seasonCalendar"), config["teamId"],
                          config["season"], json.loads(args.minutes.read_text()) if args.minutes else None,
-                         set(args.exclude))
+                         set(args.exclude), pool)
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
             args.output.write_text(json.dumps(result, indent=2) + "\n")
