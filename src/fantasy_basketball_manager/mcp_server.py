@@ -30,10 +30,28 @@ def create_server(config_path=CONFIG, allow_writes=False):
 
     @server.tool()
     def fantasy_project(exclude_player_ids: list[int] | None = None) -> dict:
-        """Project both teams day by day from forward ESPN forecasts; optionally exclude players."""
+        """Project both teams day by day with the per-game model; optionally exclude players."""
         args = [*prefix, "project"]
         if exclude_player_ids:
             args += ["--exclude", *map(str, exclude_player_ids)]
+        return execute(args)
+
+    @server.tool()
+    def fantasy_transactions(days: int = 30, team_id: int | None = None) -> dict:
+        """League adds and drops by team over the last `days` days, newest first."""
+        args = [*prefix, "transactions", "--days", str(days)]
+        if team_id is not None:
+            args += ["--team", str(team_id)]
+        return execute(args)
+
+    @server.tool()
+    def fantasy_stream(from_period: int | None = None, keep_player_ids: list[int] | None = None) -> dict:
+        """Rank free-agent add/drop pairs by lineup points added this matchup. Read-only; sends nothing."""
+        args = [*prefix, "stream"]
+        if from_period is not None:
+            args += ["--from-period", str(from_period)]
+        if keep_player_ids:
+            args += ["--keep", *map(str, keep_player_ids)]
         return execute(args)
 
     @server.tool()

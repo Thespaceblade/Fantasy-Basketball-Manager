@@ -18,9 +18,15 @@ change. Verify healthy players with games are starting where capacity and eligib
 permit. With a full slate, compare projected points. Later injury news can invalidate
 the initial arrangement. Quick Lineup does not acquire players.
 
-For acquisition decisions, inspect the complete `availablePlayers` pool, recent and
-projected stat splits, schedule, starting-slot capacity, remaining acquisitions, and
-IR eligibility. Distinguish FREEAGENT from WAIVERS. Waiver bids/claims are unsupported.
+For acquisition decisions, start with `fbm stream` / `fantasy_stream`: it ranks
+free-agent add/drop pairs by lineup points added over the remaining matchup days, which
+favors players who fill empty slots on light days. Follow its reserve advice (hold one
+acquisition for injuries until two days remain), pass `--keep` for players the user
+wants to hold, and rerun after every move. Then confirm the candidate's injury status,
+schedule, starting-slot capacity, remaining acquisitions, and IR eligibility. ESPN may
+refuse IR for a player listed OUT; check the IR slot actually accepts him before relying
+on it. Add before the player's game locks; drop only after the dropped player's game ends.
+Use `fbm transactions` / `fantasy_transactions` for league adds and drops by team. Distinguish FREEAGENT from WAIVERS. Waiver bids/claims are unsupported.
 Use combined `addDropFreeAgent` when a drop is needed; never split it into a standalone
 drop and later add. Do not substitute players without authorization.
 
@@ -33,8 +39,10 @@ present and drop absent, report it as already reflected. If Quick Lineup's bench
 is flagged, inspect whether starting slots are full before calling it a failure.
 
 Use `fbm project --output data/current.json` for points forecasts and save dated
-snapshots to compare later using `fbm compare`. Forecasts use ESPN forward stat lines
-scored with the league's actual rules, not season actual averages. Explain that
+snapshots to compare later using `fbm compare`. The default per-game model uses recent
+game logs shrunk toward ESPN's preseason rate, scored with the league's rules; it
+removed ESPN's ~3-point-per-game overestimate in backtests (`fbm backtest`), but single
+games still miss by about 10 points. `--model espn` gives the old preseason forecast. Explain that
 future minutes, OUT exclusions, and DTD participation are assumptions; use exclusion
 scenarios where needed. These forecasts are not calibrated win probabilities.
 Completed days are actuals; today's estimate is a full-game forecast, not a remaining

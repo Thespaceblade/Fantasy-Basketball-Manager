@@ -7,6 +7,11 @@ import sys
 from .client import Client, install_operations, operation_spec, templates
 from .forecast import project
 from .pergame import Params, evaluate, fetch_players
+from .stream import plan as stream_plan
+from .transactions import fetch_topics, parse, summarize
+from .manager import period_days
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from .manager import Manager, counters
 
 CONFIG = Path.home() / ".config" / "fantasy-basketball-manager" / "config.json"
@@ -49,6 +54,14 @@ def execute(argv=None):
     test.add_argument("--to-period", type=int, required=True, help="Last daily scoring period to test")
     forecast.add_argument("--exclude", type=int, nargs="*", default=[], help="Scenario: exclude these player IDs on future days")
     forecast.add_argument("--output", type=Path)
+    history = sub.add_parser("transactions", help="League transaction history: adds and drops by team, newest first")
+    history.add_argument("--days", type=int, default=30, help="How many days back to read (default 30)")
+    history.add_argument("--team", type=int, help="Only this team ID")
+    stream = sub.add_parser("stream", help="Rank free-agent add/drop pairs by lineup points added this matchup (read-only)")
+    stream.add_argument("--from-period", type=int, help="First scoring period a pickup would count (default: today)")
+    stream.add_argument("--minutes", type=Path, help="Optional day-of minutes JSON, same format as project --minutes")
+    stream.add_argument("--top", type=int, default=10)
+    stream.add_argument("--keep", type=int, nargs="*", default=[], help="Player IDs never to suggest dropping")
     compare = sub.add_parser("compare", help="Compare two saved fbm project outputs by team ID and scoring period")
     compare.add_argument("original", type=Path)
     compare.add_argument("current", type=Path)
@@ -90,6 +103,37 @@ def execute(argv=None):
         return {"scoringPeriodId": s["scoringPeriodId"], "status": s["status"],
                 "counters": counters(s, config["teamId"], client.read("seasonCalendar")),
                 "lineup": client.read("lineup", scoringPeriodId=s["scoringPeriodId"])}
+    if args.command == "transactions":
+        if args.days <= 0:
+            raise ValueError("--days must be positive")
+        snapshot = client.read("leagueSnapshot")
+        end = int(datetime.now(ZoneInfo("America/New_York")).timestamp() * 1000)
+        topics = fetch_topics(client, end - args.days * 86_400_000, end)
+        team_names = {t["id"]: t.get("name", str(t["id"])) for t in snapshot["teams"]}
+        ids = {m.get("targetId") for t in topics if t.get("type") == "ACTIVITY_TRANSACTIONS"
+               for m in t.get("messages", []) if isinstance(m.get("targetId"), int)}
+        players = {p["id"]: p["fullName"] for p in fetch_players(config["season"], snapshot["scoringPeriodId"], ids, limit=0)} if ids else {}
+        rows = parse(topics, team_names, players, args.team)
+        return {"days": args.days, "byTeam": summarize(rows), "transactions": rows}
+    if args.command == "stream":
+        snapshot, schedule, calendar = client.read("leagueSnapshot"), client.read("nbaSchedule"), client.read("seasonCalendar")
+        current = snapshot["scoringPeriodId"]
+        start = args.from_period or current
+        if start < current:
+            raise ValueError("--from-period cannot be in the past")
+        periods = [d for d in period_days(snapshot, current, calendar) if d >= start]
+        mine = next(t for t in snapshot["teams"] if t["id"] == config["teamId"])
+        roster = [e["playerPoolEntry"]["player"] for e in mine["roster"]["entries"] if e["lineupSlotId"] != 13]
+        entries = [e for e in client.read("availablePlayers", scoringPeriodId=current) if e.get("status") == "FREEAGENT"]
+        free_agents = [e["player"] for e in entries[:200]]  # ESPN sorts by percent rostered
+        pool = fetch_players(config["season"], current, [p["id"] for p in roster + free_agents], limit=0)
+        slots = [int(k) for k, n in snapshot["settings"]["rosterSettings"]["lineupSlotCounts"].items() if int(k) < 12 for _ in range(n)]
+        remaining = counters(snapshot, config["teamId"], calendar)["matchupRemaining"]
+        return stream_plan(roster, free_agents, periods, {p["id"]: p for p in schedule}, slots, config["season"],
+                           snapshot["settings"]["scoringSettings"]["scoringItems"], pool, schedule,
+                           remaining if remaining is not None else 99,
+                           json.loads(args.minutes.read_text()) if args.minutes else None, top=args.top,
+                           keep=args.keep)
     if args.command == "backtest":
         if not 0 < args.from_period <= args.to_period:
             raise ValueError("Periods must be positive and in order")
