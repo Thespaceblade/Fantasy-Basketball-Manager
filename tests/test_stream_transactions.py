@@ -46,6 +46,18 @@ class StreamTests(unittest.TestCase):
         self.assertIn("No acquisitions left", none_left["reserveAdvice"])
 
 
+    def test_long_term_downgrade_guard(self):
+        # One starting slot: player 2 (30 ppg) is benched on day 10, so dropping him for a
+        # 20-ppg day-11 streamer gains 20 this week -- but loses long-term value.
+        roster, add = [player(1, 40, 1), player(2, 30, 1)], player(11, 20, 3)
+        args = (roster, [add], [10, 11], self.pro, [0], 2027, RULES, roster + [add], self.sched, 2)
+        guarded = plan(*args)
+        self.assertEqual(guarded["recommendations"], [])
+        self.assertGreater(guarded["skippedLongTermDowngrades"], 0)
+        allowed = plan(*args, allow_downgrade=True)["recommendations"]
+        self.assertEqual([(r["drop"]["id"], round(r["lineupPointsAdded"])) for r in allowed], [(2, 20)])
+
+
 class TransactionTests(unittest.TestCase):
     topics = [{"type": "ACTIVITY_TRANSACTIONS", "date": 1794586896404, "messages": [
                   {"messageTypeId": 178, "targetId": 7, "to": 6},

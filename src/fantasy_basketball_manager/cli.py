@@ -10,7 +10,7 @@ from .pergame import Params, evaluate, fetch_players
 from .stream import plan as stream_plan
 from .transactions import fetch_topics, parse, summarize
 from .manager import period_days
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from .manager import Manager, counters
 
@@ -62,6 +62,10 @@ def execute(argv=None):
     stream.add_argument("--minutes", type=Path, help="Optional day-of minutes JSON, same format as project --minutes")
     stream.add_argument("--top", type=int, default=10)
     stream.add_argument("--keep", type=int, nargs="*", default=[], help="Player IDs never to suggest dropping")
+    stream.add_argument("--allow-downgrade", action="store_true",
+                        help="Allow dropping a player with a clearly higher season average than the add")
+    stash = sub.add_parser("stash", help="When to pick up injured free agents (and hold or cut your own), using ESPN return estimates")
+    stash.add_argument("--top", type=int, default=12)
     compare = sub.add_parser("compare", help="Compare two saved fbm project outputs by team ID and scoring period")
     compare.add_argument("original", type=Path)
     compare.add_argument("current", type=Path)
@@ -115,6 +119,31 @@ def execute(argv=None):
         players = {p["id"]: p["fullName"] for p in fetch_players(config["season"], snapshot["scoringPeriodId"], ids, limit=0)} if ids else {}
         rows = parse(topics, team_names, players, args.team)
         return {"days": args.days, "byTeam": summarize(rows), "transactions": rows}
+    if args.command == "stash":
+        from .stash import MIN_SURPLUS, fetch_injury, plan as stash_plan, streamer_level, value_per_game
+        snapshot = client.read("leagueSnapshot")
+        today = datetime.now(ZoneInfo("America/New_York")).date()
+        season_end = today + timedelta(days=snapshot["status"]["finalScoringPeriod"] - snapshot["scoringPeriodId"])
+        mine = next(t for t in snapshot["teams"] if t["id"] == config["teamId"])
+        free_agents = [e["player"] for e in client.read("availablePlayers", scoringPeriodId=snapshot["scoringPeriodId"])
+                       if e.get("status") == "FREEAGENT"]
+        streamer = streamer_level(free_agents, config["season"])
+        hurt = [p for p in free_agents if p.get("injuryStatus") in ("OUT", "DAY_TO_DAY")
+                and value_per_game(p, config["season"]) - streamer >= MIN_SURPLUS]
+        own = [e["playerPoolEntry"]["player"] for e in mine["roster"]["entries"]
+               if e["playerPoolEntry"]["player"].get("injuryStatus") in ("OUT", "DAY_TO_DAY")]
+        injuries = {}
+        for p in hurt + own:
+            try:
+                injuries[p["id"]] = fetch_injury(config["season"], p["id"])
+            except OSError:
+                injuries[p["id"]] = None
+        end = int(datetime.now(ZoneInfo("America/New_York")).timestamp() * 1000)
+        rows = parse(fetch_topics(client, end - 14 * 86_400_000, end), {}, {})
+        others = len(snapshot["teams"]) - 1
+        rate = sum(1 for r in rows if "add" in r["action"] and r["teamId"] != config["teamId"]) / max(others, 1) / 2
+        return stash_plan(mine["roster"]["entries"], hurt, injuries, today, season_end, rate, config["season"],
+                          args.top, streamer=streamer)
     if args.command == "stream":
         snapshot, schedule, calendar = client.read("leagueSnapshot"), client.read("nbaSchedule"), client.read("seasonCalendar")
         current = snapshot["scoringPeriodId"]
@@ -133,7 +162,10 @@ def execute(argv=None):
                            snapshot["settings"]["scoringSettings"]["scoringItems"], pool, schedule,
                            remaining if remaining is not None else 99,
                            json.loads(args.minutes.read_text()) if args.minutes else None, top=args.top,
-                           keep=args.keep)
+                           keep=args.keep, allow_downgrade=args.allow_downgrade,
+                           first_drop_ids=[e["playerId"] for e in mine["roster"]["entries"]
+                                           if e["lineupSlotId"] != 13
+                                           and e["playerPoolEntry"]["player"].get("injuryStatus") == "OUT"])
     if args.command == "backtest":
         if not 0 < args.from_period <= args.to_period:
             raise ValueError("Periods must be positive and in order")

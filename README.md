@@ -111,7 +111,8 @@ Additional commands:
 | `fbm project [--model pergame\|espn] [--exclude ID ...] [--minutes FILE] [--output FILE]` | Produce both teams' daily forecasts and selected starting players. The per-game model is the default. |
 | `fbm backtest --from-period N --to-period M` | Score the per-game model, ESPN's preseason forecast and the season average against completed games. |
 | `fbm transactions [--days 30] [--team ID]` | League adds and drops by team, newest first, with player names. |
-| `fbm stream [--from-period N] [--keep ID ...] [--minutes FILE] [--top 10]` | Rank free-agent add/drop pairs by lineup points added for the rest of the matchup. Read-only. |
+| `fbm stream [--from-period N] [--keep ID ...] [--allow-downgrade] [--minutes FILE] [--top 10]` | Rank free-agent add/drop pairs by lineup points added for the rest of the matchup. Read-only. |
+| `fbm stash [--top 12]` | When to pick up injured free agents and whether to hold your own, using ESPN return estimates. Read-only. |
 | `fbm compare ORIGINAL.json CURRENT.json` | Compare saved `fbm project` outputs by team ID and day, with point deltas and actual/forecast labels. |
 | `fbm-mcp [--config PATH] [--allow-writes]` | Run the optional local stdio MCP server. |
 
@@ -311,15 +312,44 @@ The rules it follows, and why:
    lineup points lost this matchup; when several cost nothing (for example, no games
    left), the lowest season average is suggested first. Use `--keep` for anyone you
    want to hold regardless.
-4. **Keep one acquisition in reserve** for injuries until the last two days of the
+4. **Don't trade long-term value for one week.** A pair is skipped when the dropped player
+   averages more than 2 points per game above the added one (`--allow-downgrade` overrides).
+   Injured bench stashes are the exception: they are offered as the first drop.
+5. **Keep one acquisition in reserve** for injuries until the last two days of the
    matchup (`recommendedToUseNow`). With none left, the output says so.
-5. **Supply day-of minutes when you have them.** Minutes are the largest remaining
+6. **Supply day-of minutes when you have them.** Minutes are the largest remaining
    source of single-game error (perfect minutes cut backtest error from 10.1 to 8.5).
 
 Timing when you act: add a player before his team tips off so that day's game counts;
 drop a player after his game ends so his points still count; then put the new player in
 a starting slot (ESPN adds to the bench) or run `quickLineupRestOfMatchup` and verify.
 Each recommendation is evaluated on its own; rerun after every move.
+
+## Stashing injured players
+
+```bash
+fbm stash
+```
+
+Nobody wants a bench full of injured stars: every spot holding one is a spot you cannot
+stream with or use when your own player gets hurt. `fbm stash` answers **when** to pick up
+an injured free agent, using the estimated return date ESPN publishes with each injury:
+
+- **Worth it at all?** Value is the average of ESPN's projection, last season and this
+  season (5+ games), in your scoring, compared with a typical healthy streamer (the top 10
+  healthy free agents). Under 5 points per game better: skip.
+- **Around the corner (back within ~30 days):** one bench stash is fine — "stash now
+  (first to drop)".
+- **Further out:** "watch: pick up by DATE" — the return estimate minus a lead time of
+  5–10 days (more when other managers in your league add players often, +3 for stars).
+  Holding him earlier wastes a roster spot for nothing.
+- **Open IR slot:** lets you stash up to two weeks earlier, no more; IR is also your cover
+  for your own injuries.
+- **Your own injured players:** an injured bench stash is **first to drop** when one of your
+  better players gets hurt and IR is full; players out for 6+ weeks on the bench are flagged.
+
+ESPN's return dates are estimates and move often (and can be more conservative than team
+reports). Re-run before acting.
 
 ## Install the agent skill
 
@@ -363,6 +393,7 @@ This enables a tool, not blanket permission for the agent to change a roster.
 | `fantasy_project` | Optional `exclude_player_ids` array | Day-by-day per-game-model forecast and injury scenarios. |
 | `fantasy_transactions` | Optional `days`, `team_id` | League adds and drops by team, newest first. |
 | `fantasy_stream` | Optional `from_period`, `keep_player_ids` | Ranked free-agent add/drop pairs by lineup points added. Read-only. |
+| `fantasy_stash` | Optional `top` | Stash timing for injured free agents and advice for your own injured players. Read-only. |
 | `fantasy_preview` | `operation`, optional `args` object | Preflight and preview a write; send nothing. |
 | `fantasy_apply` | Same as preview | Available only with `--allow-writes`; preflight, preview, send once, read back. |
 
