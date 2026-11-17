@@ -55,6 +55,11 @@ def create_server(config_path=CONFIG, allow_writes=False):
         return execute(args)
 
     @server.tool()
+    def fantasy_stash(top: int = 12) -> dict:
+        """When to pick up injured free agents and whether to hold your own. Read-only; sends nothing."""
+        return execute([*prefix, "stash", "--top", str(top)])
+
+    @server.tool()
     def fantasy_preview(operation: str, args: dict | None = None) -> dict:
         """Fresh-state preflight and exact preview of a lineup or acquisition write; sends nothing."""
         if operation_spec(operation)["readOnly"]:

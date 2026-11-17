@@ -116,6 +116,14 @@ class ManagerTests(unittest.TestCase):
 
     def test_limit_per_scoring_period_uses_matchup_length(self):
         self.assertEqual(counters(self.client.snapshot, 1, self.client.calendar)["matchupLimit"], 2)
+
+    def test_first_acquisition_of_week_counts_as_zero_used(self):
+        snap = copy.deepcopy(self.client.snapshot)
+        snap["teams"][0]["transactionCounter"]["matchupAcquisitionTotals"] = {"1": 3}  # earlier week only
+        c = counters(snap, 1, self.client.calendar)
+        self.assertEqual((c["matchupUsed"], c["matchupRemaining"]), (0, 2))
+        del snap["teams"][0]["transactionCounter"]["matchupAcquisitionTotals"]
+        self.assertIsNone(counters(snap, 1, self.client.calendar)["matchupUsed"])
         self.client.snapshot["teams"][0]["transactionCounter"]["matchupAcquisitionTotals"]["2"] = 2
         with self.assertRaisesRegex(ValueError, "limit reached"):
             self.manager.write("addDropFreeAgent", self.args, apply=True)

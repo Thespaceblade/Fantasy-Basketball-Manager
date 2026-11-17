@@ -26,7 +26,14 @@ wants to hold, and rerun after every move. Then confirm the candidate's injury s
 schedule, starting-slot capacity, remaining acquisitions, and IR eligibility. ESPN may
 refuse IR for a player listed OUT; check the IR slot actually accepts him before relying
 on it. Add before the player's game locks; drop only after the dropped player's game ends.
-Use `fbm transactions` / `fantasy_transactions` for league adds and drops by team. Distinguish FREEAGENT from WAIVERS. Waiver bids/claims are unsupported.
+Use `fbm transactions` / `fantasy_transactions` for league adds and drops by team.
+
+For injured players, use `fbm stash` / `fantasy_stash` before recommending any stash.
+Never fill the bench with injured players to hold for months: hold at most one bench
+stash, for a player back within about 30 days, and treat him as the first drop if one of
+the user's better players gets hurt and IR is full. For longer absences, give the
+"pick up by" date instead. ESPN return dates are estimates; mention team reports when
+they differ. Distinguish FREEAGENT from WAIVERS. Waiver bids/claims are unsupported.
 Use combined `addDropFreeAgent` when a drop is needed; never split it into a standalone
 drop and later add. Do not substitute players without authorization.
 

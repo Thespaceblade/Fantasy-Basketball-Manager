@@ -68,7 +68,10 @@ def counters(snapshot, team_id, calendar):
     settings = snapshot["settings"]["acquisitionSettings"]
     counter = team(snapshot, team_id).get("transactionCounter", {})
     matchup = snapshot["status"]["currentMatchupPeriod"]
-    used = counter.get("matchupAcquisitionTotals", {}).get(str(matchup))
+    totals = counter.get("matchupAcquisitionTotals")
+    # ESPN omits the current matchup's key until the first acquisition of the week, so a
+    # present totals map without this matchup means zero used. A missing map stays unknown.
+    used = None if totals is None else totals.get(str(matchup), 0)
     maximum = settings.get("matchupAcquisitionLimit", -1)
     if maximum >= 0 and settings.get("matchupLimitPerScoringPeriod"):
         maximum *= len(period_days(snapshot, snapshot["scoringPeriodId"], calendar))
