@@ -158,14 +158,21 @@ def execute(argv=None):
         pool = fetch_players(config["season"], current, [p["id"] for p in roster + free_agents], limit=0)
         slots = [int(k) for k, n in snapshot["settings"]["rosterSettings"]["lineupSlotCounts"].items() if int(k) < 12 for _ in range(n)]
         remaining = counters(snapshot, config["teamId"], calendar)["matchupRemaining"]
+        # Only the lowest-value long-term injury on the bench is offered as a first drop;
+        # short absences and better injured players are protected (see stash.py).
+        from .stash import fetch_injury, first_to_drop
+        entries = mine["roster"]["entries"]
+        hurt_ids = [e["playerId"] for e in entries if e["playerPoolEntry"]["player"].get("injuryStatus") == "OUT"]
+        injuries = {pid: fetch_injury(config["season"], pid) for pid in hurt_ids}
+        today = datetime.now(ZoneInfo("America/New_York")).date()
+        cut = first_to_drop(entries, injuries, today, config["season"])
+        first_drop = [cut] if cut and any(e["playerId"] == cut and e["lineupSlotId"] != 13 for e in entries) else []
         return stream_plan(roster, free_agents, periods, {p["id"]: p for p in schedule}, slots, config["season"],
                            snapshot["settings"]["scoringSettings"]["scoringItems"], pool, schedule,
                            remaining if remaining is not None else 99,
                            json.loads(args.minutes.read_text()) if args.minutes else None, top=args.top,
                            keep=args.keep, allow_downgrade=args.allow_downgrade,
-                           first_drop_ids=[e["playerId"] for e in mine["roster"]["entries"]
-                                           if e["lineupSlotId"] != 13
-                                           and e["playerPoolEntry"]["player"].get("injuryStatus") == "OUT"])
+                           first_drop_ids=first_drop)
     if args.command == "backtest":
         if not 0 < args.from_period <= args.to_period:
             raise ValueError("Periods must be positive and in order")
