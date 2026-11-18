@@ -1,6 +1,6 @@
 from datetime import date
 import unittest
-from fantasy_basketball_manager.stash import assess, assess_own, plan, value_per_game, lead_days
+from fantasy_basketball_manager.stash import assess, assess_own, first_to_drop, plan, value_per_game, lead_days
 
 TODAY = date(2026, 11, 17)
 END = date(2027, 4, 11)
@@ -50,12 +50,35 @@ class StashTests(unittest.TestCase):
         self.assertEqual(near["action"], "stash now (to IR)")
         self.assertTrue(far["action"].startswith("watch"))
 
-    def test_stash_is_first_to_drop_for_a_better_hurt_player(self):
-        stash, star = player(1, 36, 35), player(2, 45, 44, status="DAY_TO_DAY")
-        r = assess_own(stash, back("2026-12-14"), TODAY, 12, 2027, [stash, star])
-        self.assertTrue(r["firstToDrop"]); self.assertIn("drop first", r["advice"])
-        calm = assess_own(stash, back("2026-12-14"), TODAY, 12, 2027, [stash])
-        self.assertIn("first to drop if", calm["advice"])
+    def test_lowest_value_long_injury_is_first_to_drop(self):
+        stash, core = player(1, 36, 35), player(2, 45, 44)
+        entries = [{"lineupSlotId": 13, "playerPoolEntry": {"player": stash}},
+                   {"lineupSlotId": 12, "playerPoolEntry": {"player": core}}]
+        out = plan(entries, [], {1: back("2026-12-14"), 2: back("2026-11-29")}, TODAY, END, 0.5, 2027, streamer=26)
+        own = {r["id"]: r for r in out["yourInjuredPlayers"]}
+        self.assertTrue(own[1].get("firstToDrop"))           # the IR stash, not the better core player
+        self.assertNotIn("firstToDrop", own[2])
+
+    def test_first_to_drop_skips_short_absences(self):
+        entries = [{"lineupSlotId": 12, "playerPoolEntry": {"player": player(1, 30, 30)}},
+                   {"lineupSlotId": 12, "playerPoolEntry": {"player": player(2, 45, 44)}}]
+        self.assertEqual(first_to_drop(entries, {1: back("2026-11-19"), 2: back("2026-12-20")}, TODAY, 2027), 2)
+        self.assertIsNone(first_to_drop(entries[:1], {1: back("2026-11-19")}, TODAY, 2027))
+
+    def test_suggests_ir_swap_when_ir_player_returns_sooner(self):
+        r = assess_own(player(2, 45, 44), back("2026-12-30"), TODAY, 12, 2027, first_to_drop_id=None,
+                       ir_player={"name": "Soon", "days": 5})
+        self.assertIn("swap onto IR", r["advice"])
+
+    def test_short_absence_is_not_a_stash(self):
+        regular, hurt_star = player(1, 40, 40), player(2, 45, 44)
+        r = assess_own(regular, back("2026-11-19"), TODAY, 12, 2027, [regular, hurt_star])
+        self.assertNotIn("firstToDrop", r)
+        self.assertTrue(r["advice"].startswith("hold: short absence"))
+        entries = [{"lineupSlotId": 13, "playerPoolEntry": {"player": player(5, 36, 35)}},
+                   {"lineupSlotId": 12, "playerPoolEntry": {"player": regular}}]
+        out = plan(entries, [], {1: back("2026-11-19"), 5: back("2026-12-14")}, TODAY, END, 0.5, 2027, streamer=26)
+        self.assertEqual(out["benchStashesHeld"], 0)
 
     def test_plan_counts_bench_stash_and_ir(self):
         entries = [{"lineupSlotId": 13, "playerPoolEntry": {"player": player(5, 40, 40)}},

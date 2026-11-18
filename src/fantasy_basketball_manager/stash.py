@@ -35,6 +35,7 @@ STAR = 40.0                   # points per game at which other managers watch cl
 MAX_BENCH_STASHES = 1
 LONG_ABSENCE_DAYS = 42        # own players out longer than this on the bench: consider dropping
 SOFT_STASH_DAYS = 30          # one bench stash is fine for a player back within this many days
+SHORT_ABSENCE_DAYS = 7        # own players back within this many days are just hurt, not stashes
 IR_EXTRA_DAYS = 14            # an open IR slot lets you stash this much earlier, but no earlier:
                               # IR is also your cover when one of your own players gets hurt
 
@@ -117,25 +118,43 @@ def assess(player, injury, today, season_end, streamer, adds_rate, ir_open, benc
             "why": f"Out about {days_out} days; holding him before then wastes a roster spot for {(pick_by - today).days} days"}
 
 
-def assess_own(player, injury, today, slot, season, better_hurt_without_ir=()):
+def assess_own(player, injury, today, slot, season, first_to_drop_id=None, ir_player=None):
+    """Advice for one of your own injured players.
+
+    Short absences are just injuries. Among longer absences, the lowest-value player is
+    the one to cut first when you need a roster spot, whether he sits on IR or the bench.
+    """
     value = value_per_game(player, season)
     ret = (injury or {}).get("returnDate")
     days_out = max((date.fromisoformat(ret[:10]) - today).days, 0) if ret else None
     row = {"id": player["id"], "name": player["fullName"], "status": player.get("injuryStatus"),
            "slot": "IR" if slot == 13 else "bench/active", "valuePerGame": round(value, 1),
            "espnReturnEstimate": ret, "daysUntilReturn": days_out}
-    if slot != 13 and player.get("injuryStatus") == "OUT":
-        better = [b for b in better_hurt_without_ir if b["id"] != player["id"] and value_per_game(b, season) > value]
-        if better:
-            return {**row, "firstToDrop": True,
-                    "advice": "drop first: " + ", ".join(b["fullName"] for b in better)
-                              + " is hurt, better, and needs the spot (IR is full)"}
-        if days_out is not None and days_out > LONG_ABSENCE_DAYS:
-            return {**row, "firstToDrop": True,
-                    "advice": "consider dropping or moving to IR: out a long time and blocking a spot"}
-        return {**row, "firstToDrop": True,
-                "advice": "hold as your bench stash; first to drop if a better player of yours gets hurt"}
-    return {**row, "advice": "hold" + (" (on IR)" if slot == 13 else "")}
+    if days_out is not None and days_out <= SHORT_ABSENCE_DAYS:
+        return {**row, "advice": f"hold: short absence, back in about {days_out} day(s)"}
+    when = f"back in about {days_out} days" if days_out is not None else "no return estimate"
+    if player["id"] == first_to_drop_id:
+        advice = f"first to drop if you need a roster spot (lowest-value long-term injury, {when})"
+        if slot != 13 and days_out is not None and days_out > LONG_ABSENCE_DAYS:
+            advice = f"consider dropping: out a long time and blocking a bench spot ({when})"
+        return {**row, "firstToDrop": True, "advice": advice}
+    if slot != 13 and ir_player is not None and player.get("injuryStatus") == "OUT":
+        ir_ret = ir_player.get("days")
+        if ir_ret is not None and days_out is not None and ir_ret < days_out:
+            return {**row, "advice": f"hold; swap onto IR with {ir_player['name']}, who returns sooner ({when})"}
+    return {**row, "advice": f"hold{' (on IR)' if slot == 13 else ''}: {when}"}
+
+
+def first_to_drop(roster_entries, injuries, today, season):
+    """ID of the lowest-value player out longer than a short absence, or None."""
+    long_out = []
+    for e in roster_entries:
+        p = e["playerPoolEntry"]["player"]
+        ret = (injuries.get(p["id"]) or {}).get("returnDate")
+        days = (date.fromisoformat(ret[:10]) - today).days if ret else None
+        if p.get("injuryStatus") == "OUT" and (days is None or days > SHORT_ABSENCE_DAYS):
+            long_out.append(p)
+    return min(long_out, key=lambda p: value_per_game(p, season))["id"] if long_out else None
 
 
 def plan(roster_entries, free_agents, injuries, today, season_end, adds_rate, season, top=12, streamer=None):
@@ -144,7 +163,17 @@ def plan(roster_entries, free_agents, injuries, today, season_end, adds_rate, se
     ir_open = not any(e["lineupSlotId"] == 13 for e in roster_entries)
     own_hurt = [(e["playerPoolEntry"]["player"], e["lineupSlotId"]) for e in roster_entries
                 if e["playerPoolEntry"]["player"].get("injuryStatus") in ("OUT", "DAY_TO_DAY")]
-    bench_stashes = sum(1 for p, slot in own_hurt if slot != 13 and p.get("injuryStatus") == "OUT")
+    def out_days(p):
+        ret = (injuries.get(p["id"]) or {}).get("returnDate")
+        return (date.fromisoformat(ret[:10]) - today).days if ret else None
+    # A stash is an OUT player on the bench for more than a short absence.
+    bench_stashes = sum(1 for p, slot in own_hurt if slot != 13 and p.get("injuryStatus") == "OUT"
+                        and (out_days(p) is None or out_days(p) > SHORT_ABSENCE_DAYS))
+    long_out = [p for p, slot in own_hurt if p.get("injuryStatus") == "OUT"
+                and (out_days(p) is None or out_days(p) > SHORT_ABSENCE_DAYS)]
+    first_id = min(long_out, key=lambda p: value_per_game(p, season))["id"] if long_out else None
+    on_ir = next((p for p, slot in own_hurt if slot == 13), None)
+    ir_info = {"name": on_ir["fullName"], "days": out_days(on_ir)} if on_ir else None
     streamer = streamer_level(free_agents, season) if streamer is None else streamer
     hurt_fas = [p for p in free_agents if p.get("injuryStatus") in ("OUT", "DAY_TO_DAY")]
     rows = [assess(p, injuries.get(p["id"]), today, season_end, streamer, adds_rate, ir_open, bench_stashes, season)
@@ -154,7 +183,6 @@ def plan(roster_entries, free_agents, injuries, today, season_end, adds_rate, se
     return {"today": today.isoformat(), "streamerLevel": round(streamer, 1), "irOpen": ir_open,
             "benchStashesHeld": bench_stashes, "otherTeamsAddsPerTeamPerWeek": round(adds_rate, 2),
             "yourInjuredPlayers": [assess_own(p, injuries.get(p["id"]), today, slot, season,
-                                              [] if ir_open else [q for q, s in own_hurt if s != 13])
-                                   for p, slot in own_hurt],
+                                              first_id, ir_info) for p, slot in own_hurt],
             "freeAgents": [r for r in rows if r["action"] != "skip"][:top],
             "note": "Return dates are ESPN estimates and move often. Re-run before acting; nothing was sent."}
