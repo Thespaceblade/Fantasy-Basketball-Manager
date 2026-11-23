@@ -105,7 +105,7 @@ def execute(argv=None):
     if args.command == "status":
         s = client.read("leagueSnapshot")
         return {"scoringPeriodId": s["scoringPeriodId"], "status": s["status"],
-                "counters": counters(s, config["teamId"], client.read("seasonCalendar")),
+                "counters": counters(s, config["teamId"], client.read("seasonCalendar"), client.read("nbaSchedule")),
                 "lineup": client.read("lineup", scoringPeriodId=s["scoringPeriodId"])}
     if args.command == "transactions":
         if args.days <= 0:
@@ -157,7 +157,7 @@ def execute(argv=None):
         free_agents = [e["player"] for e in entries[:200]]  # ESPN sorts by percent rostered
         pool = fetch_players(config["season"], current, [p["id"] for p in roster + free_agents], limit=0)
         slots = [int(k) for k, n in snapshot["settings"]["rosterSettings"]["lineupSlotCounts"].items() if int(k) < 12 for _ in range(n)]
-        remaining = counters(snapshot, config["teamId"], calendar)["matchupRemaining"]
+        remaining = counters(snapshot, config["teamId"], calendar, schedule)["matchupRemaining"]
         # Only the lowest-value long-term injury on the bench is offered as a first drop;
         # short absences and better injured players are protected (see stash.py).
         from .stash import fetch_injury, first_to_drop

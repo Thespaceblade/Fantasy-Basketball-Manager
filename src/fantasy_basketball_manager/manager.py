@@ -64,7 +64,19 @@ def period_days(snapshot, period, calendar):
     raise ValueError("Scoring period is missing from ESPN's league/season calendar")
 
 
-def counters(snapshot, team_id, calendar):
+def game_days(days, schedule):
+    """Days on which at least one NBA game is scheduled."""
+    played = {int(d) for team in schedule for d, games in team.get("proGamesByScoringPeriod", {}).items() if games}
+    return [d for d in days if d in played]
+
+
+def counters(snapshot, team_id, calendar, schedule=None):
+    """Pickups used and left this matchup.
+
+    With a per-scoring-period limit, ESPN multiplies by the matchup's days that have NBA
+    games (a Thanksgiving week with no Thursday games allows 6, not 7). Pass `schedule`
+    to count those; without it every calendar day counts.
+    """
     settings = snapshot["settings"]["acquisitionSettings"]
     counter = team(snapshot, team_id).get("transactionCounter", {})
     matchup = snapshot["status"]["currentMatchupPeriod"]
@@ -74,7 +86,8 @@ def counters(snapshot, team_id, calendar):
     used = None if totals is None else totals.get(str(matchup), 0)
     maximum = settings.get("matchupAcquisitionLimit", -1)
     if maximum >= 0 and settings.get("matchupLimitPerScoringPeriod"):
-        maximum *= len(period_days(snapshot, snapshot["scoringPeriodId"], calendar))
+        days = period_days(snapshot, snapshot["scoringPeriodId"], calendar)
+        maximum *= len(game_days(days, schedule) if schedule is not None else days)
     return {"matchupUsed": used, "matchupLimit": maximum,
             "matchupRemaining": None if maximum < 0 or used is None else max(0, maximum-used),
             "seasonUsed": counter.get("acquisitions"),
@@ -135,7 +148,7 @@ class Manager:
                 return {"status": "already_reflected", "sent": False}
             if add in by_id or (drop is not None and drop not in by_id):
                 raise ValueError("Add/drop roster does not match requested transaction")
-            counts = counters(snapshot, self.team_id, calendar)
+            counts = counters(snapshot, self.team_id, calendar, self.client.read("nbaSchedule"))
             if counts["matchupUsed"] is None:
                 raise ValueError("Acquisition usage unknown; review on ESPN")
             if counts["matchupRemaining"] == 0:
